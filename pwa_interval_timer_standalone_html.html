@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <title>Interval Forge — PWA Timer</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#111833; --muted:#9fb3c8; --text:#e6f0ff; --accent:#0ea5e9; --accent-2:#22c55e; --warn:#f59e0b; --danger:#ef4444;
+      --focus: 0 0 0 3px rgba(14,165,233,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#0b1020 0%,#0a1329 100%);color:var(--text);}
+    .wrap{max-width:840px;margin:0 auto;padding:calc(env(safe-area-inset-top,0) + 12px) 12px calc(env(safe-area-inset-bottom,0) + 16px);}
+    header{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:8px}
+    h1{font-size:20px;margin:0;letter-spacing:.3px}
+    .pill{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.06);color:var(--muted);font-size:12px}
+    .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 12px}
+    .tab-btn{appearance:none;border:0;background:#0d1530;color:var(--muted);padding:10px;border-radius:12px;font-weight:600}
+    .tab-btn[aria-selected="true"]{background:linear-gradient(180deg,#12204a,#0d1738);color:#fff;outline:0;box-shadow:var(--focus)}
+    .card{background:linear-gradient(180deg,#0f1a3a,#0c1633);border:1px solid rgba(255,255,255,.07);box-shadow:0 10px 30px rgba(0,0,0,.35);border-radius:16px;padding:12px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+    .row4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+    input, select{width:100%;padding:12px 12px;border-radius:12px;background:#0b132c;border:1px solid rgba(255,255,255,.09);color:#fff}
+    input:focus,select:focus,button:focus{outline:0;box-shadow:var(--focus)}
+    button{cursor:pointer}
+    .btn{background:linear-gradient(180deg,#10214d,#0c1a3c);border:1px solid rgba(255,255,255,.1);color:#eaf2ff;padding:12px;border-radius:12px;font-weight:700}
+    .btn.primary{background:linear-gradient(180deg,#0ea5e9,#0284c7);color:#06121d;border-color:#19befb}
+    .btn.good{background:linear-gradient(180deg,#22c55e,#16a34a);color:#03140a;border-color:#34d399}
+    .btn.warn{background:linear-gradient(180deg,#f59e0b,#d97706);color:#150b03;border-color:#fbbf24}
+    .btn.ghost{background:#0b132c}
+    .stack{display:flex;gap:8px;flex-wrap:wrap}
+    .section-title{font-size:14px;color:#bcd2e6;margin:8px 0 6px;font-weight:700}
+    .list{display:flex;flex-direction:column;gap:8px}
+    .item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:12px;background:#0b132c;border:1px solid rgba(255,255,255,.06)}
+    .item h4{margin:0;font-size:14px}
+    .item small{color:var(--muted)}
+    .badge{font-size:11px;color:#03140a;background:#34d399;border:1px solid #10b981;padding:4px 8px;border-radius:999px}
+    .danger{color:#ffd4d4}
+    .muted{color:var(--muted)}
+    .grid{display:grid;gap:8px}
+    .timer{display:grid;gap:8px;place-items:center;text-align:center;padding:8px}
+    .time{font-size:56px;font-weight:900;letter-spacing:1px}
+    .label{font-size:16px;color:#bcd2e6}
+    progress{width:100%;height:18px;-webkit-appearance:none;appearance:none}
+    progress::-webkit-progress-bar{background:#0b132c;border-radius:999px}
+    progress::-webkit-progress-value{background:linear-gradient(90deg,#0ea5e9,#22c55e);border-radius:999px}
+    .controls{display:flex;gap:8px}
+    .controls .btn{flex:1}
+    .table{width:100%;border-collapse:collapse;border-spacing:0}
+    .table th,.table td{padding:8px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left}
+    .table th{font-size:12px;color:#bcd2e6}
+    .table td{font-size:14px}
+    .hint{font-size:12px;color:var(--muted)}
+    .grow{flex:1}
+    footer{margin-top:12px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    @media (min-width:720px){
+      .two-col{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Interval Forge <span class="pill">PWA</span></h1>
+      <div class="stack">
+        <button class="btn ghost" id="installBtn" hidden>Install</button>
+        <button class="btn ghost" id="shareBtn" title="Share or Add to Home Screen">Share</button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Main Tabs">
+      <button class="tab-btn" role="tab" aria-selected="true" data-tab="build">Build</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="preview">Preview</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="timer">Timer</button>
+      <button class="tab-btn" role="tab" aria-selected="false" data-tab="routines">Routines</button>
+    </nav>
+
+    <section id="build" class="card" role="tabpanel" aria-labelledby="build-tab">
+      <div class="two-col">
+        <div class="grid">
+          <div class="section-title">Manual Interval</div>
+          <div class="row">
+            <div>
+              <label for="miLabel">Label</label>
+              <input id="miLabel" placeholder="e.g., Pushups" />
+            </div>
+            <div>
+              <label for="miSec">Seconds</label>
+              <input id="miSec" type="number" min="0" step="1" placeholder="e.g., 45" />
+            </div>
+          </div>
+          <div class="stack">
+            <button class="btn" id="addManual">Add Interval</button>
+          </div>
+
+          <div class="section-title">Repeated Set Builder</div>
+          <div class="row3">
+            <div>
+              <label for="setName">Set Name (optional)</label>
+              <input id="setName" placeholder="e.g., HIIT Round" />
+            </div>
+            <div>
+              <label for="setRepeats">Repeats</label>
+              <input id="setRepeats" type="number" min="1" step="1" value="5" />
+            </div>
+            <div>
+              <label for="setGap">Gap Between Rounds (s)</label>
+              <input id="setGap" type="number" min="0" step="1" value="0" />
+            </div>
+          </div>
+
+          <div class="row3">
+            <div>
+              <label>Interval A Label</label>
+              <input id="aLabel" placeholder="Work" value="Work" />
+            </div>
+            <div>
+              <label>A Start (s)</label>
+              <input id="aStart" type="number" min="0" step="1" value="15" />
+            </div>
+            <div>
+              <label>A Change</label>
+              <select id="aChangeType">
+                <option value="none">None</option>
+                <option value="arith">± Step (s)</option>
+                <option value="ratio">× Ratio</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="aChangeVal">A Step / Ratio</label>
+              <input id="aChangeVal" type="number" step="0.001" value="0" />
+            </div>
+            <div class="hint">Examples: +15, −10, or ratio 1.618 / 0.75</div>
+          </div>
+
+          <div class="row3">
+            <div>
+              <label>Interval B Label</label>
+              <input id="bLabel" placeholder="Rest" value="Rest" />
+            </div>
+            <div>
+              <label>B Start (s)</label>
+              <input id="bStart" type="number" min="0" step="1" value="60" />
+            </div>
+            <div>
+              <label>B Change</label>
+              <select id="bChangeType">
+                <option value="none">None</option>
+                <option value="arith">± Step (s)</option>
+                <option value="ratio">× Ratio</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="bChangeVal">B Step / Ratio</label>
+              <input id="bChangeVal" type="number" step="0.001" value="0" />
+            </div>
+            <div class="hint">Geometric example from prompt: 15 → 24 → 39 → 63 …</div>
+          </div>
+
+          <div class="stack">
+            <button class="btn" id="previewSet">Preview Set</button>
+            <button class="btn good" id="addSet">Add Set → Routine</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title">Set Preview</div>
+          <div id="setPreview" class="card" style="min-height:120px;">
+            <div class="hint">Press “Preview Set” to see each round’s A/B seconds.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Routine</div>
+      <div id="routineList" class="list"></div>
+      <div class="stack" style="margin-top:8px;">
+        <button class="btn warn" id="clearRoutine">Clear Routine</button>
+        <span class="grow"></span>
+        <button class="btn primary" id="goTimer">Go to Timer</button>
+      </div>
+    </section>
+
+    <section id="preview" class="card" hidden role="tabpanel">
+      <table class="table" id="routineTable">
+        <thead><tr><th>#</th><th>Label</th><th>Seconds</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="hint" style="margin-top:8px;">This is your fully expanded routine as it will play.</div>
+    </section>
+
+    <section id="timer" class="card" hidden role="tabpanel">
+      <div class="timer">
+        <div class="label" id="nowLabel">—</div>
+        <div class="time" id="clock">00:00</div>
+        <progress id="bar" value="0" max="1"></progress>
+        <div class="controls">
+          <button class="btn" id="prevBtn">⟵ Prev</button>
+          <button class="btn primary" id="toggleBtn">Start</button>
+          <button class="btn" id="nextBtn">Next ⟶</button>
+        </div>
+        <div class="stack" style="margin-top:8px;">
+          <button class="btn ghost" id="resetBtn">Reset</button>
+          <label style="display:flex;align-items:center;gap:6px">
+            <input type="checkbox" id="beepOpt" checked /> Beep
+          </label>
+          <label style="display:flex;align-items:center;gap:6px">
+            <input type="checkbox" id="voiceOpt" /> Voice
+          </label>
+          <label style="display:flex;align-items:center;gap:6px">
+            <input type="checkbox" id="vibOpt" checked /> Vibration
+          </label>
+          <label style="display:flex;align-items:center;gap:6px">
+            <input type="checkbox" id="autoNextOpt" checked /> Auto‑next
+          </label>
+        </div>
+        <div class="hint" id="posHint">Step 0 of 0</div>
+      </div>
+    </section>
+
+    <section id="routines" class="card" hidden role="tabpanel">
+      <div class="row">
+        <div>
+          <label for="routineName">Routine Name</label>
+          <input id="routineName" placeholder="e.g., Morning HIIT" />
+        </div>
+        <div class="stack" style="align-items:flex-end;">
+          <button class="btn good" id="saveRoutine">Save</button>
+        </div>
+      </div>
+      <div class="section-title">Saved Routines</div>
+      <div id="savedList" class="list"></div>
+    </section>
+
+    <footer>
+      <div>Tip: add to Home Screen for a native feel. Offline supported.</div>
+      <div>Built for thumbs • Accessible • Mobile‑first</div>
+    </footer>
+  </div>
+
+  <script>
+  // -------- Utilities --------
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+  const roundSec = s => Math.round(s);
+  const fmt = s => {
+    s = Math.max(0, Math.round(s));
+    const m = Math.floor(s/60), r = s % 60;
+    return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+  };
+
+  // App state
+  let routine = []; // [{label, seconds}]
+  let pos = 0; // index in routine
+  let remain = 0; // seconds left in current step
+  let ticking = false;
+  let timerId = null;
+  let wakeLock = null;
+  let deferredPrompt = null; // for install
+
+  // -------- Tabs --------
+  const switchTab = id => {
+    $$('.tab-btn').forEach(b=>b.setAttribute('aria-selected', b.dataset.tab===id ? 'true':'false'));
+    ['build','preview','timer','routines'].forEach(s=>{
+      const el = document.getElementById(s);
+      el.hidden = s!==id;
+    });
+    if(id==='preview') renderRoutineTable();
+    if(id==='timer') updateTimerUI();
+  };
+  $$('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tab)));
+
+  // -------- Manual Interval --------
+  $('#addManual').addEventListener('click', ()=>{
+    const label = ($('#miLabel').value || 'Interval').trim();
+    const seconds = parseInt($('#miSec').value,10) || 0;
+    if(seconds < 0) return alert('Seconds must be ≥ 0');
+    routine.push({label, seconds});
+    renderRoutineList();
+    persistDraft();
+    $('#miLabel').value = '';
+    $('#miSec').value = '';
+  });
+
+  // -------- Set Builder Preview / Add --------
+  function genSeries(start, type, deltaOrRatio, n){
+    const arr = [];
+    let cur = Number(start);
+    for(let i=0;i<n;i++){
+      let v = cur;
+      v = Math.max(0, roundSec(v));
+      arr.push(v);
+      if(type==='arith') cur = cur + Number(deltaOrRatio);
+      else if(type==='ratio') cur = cur * Number(deltaOrRatio);
+      else cur = cur; // none
+      if(cur < 0) cur = 0;
+    }
+    return arr;
+  }
+
+  function previewSet(){
+    const name = $('#setName').value.trim();
+    const reps = clamp(parseInt($('#setRepeats').value,10)||1,1,999);
+    const gap = clamp(parseInt($('#setGap').value,10)||0,0,3600);
+
+    const A = {
+      label: $('#aLabel').value || 'A',
+      start: clamp(parseInt($('#aStart').value,10)||0,0,24*3600),
+      type: $('#aChangeType').value,
+      val: Number($('#aChangeVal').value||0)
+    };
+    const B = {
+      label: $('#bLabel').value || 'B',
+      start: clamp(parseInt($('#bStart').value,10)||0,0,24*3600),
+      type: $('#bChangeType').value,
+      val: Number($('#bChangeVal').value||0)
+    };
+
+    const aSeq = genSeries(A.start, A.type, A.val, reps);
+    const bSeq = genSeries(B.start, B.type, B.val, reps);
+
+    const rows = [];
+    for(let i=0;i<reps;i++){
+      rows.push({round:i+1, A:aSeq[i], B:bSeq[i]});
+    }
+
+    const table = document.createElement('table');
+    table.className = 'table';
+    table.innerHTML = `<thead><tr><th>Round</th><th>${A.label} (s)</th><th>${B.label} (s)</th>${gap?'<th>Gap (s)</th>':''}</tr></thead>`;
+    const tb = document.createElement('tbody');
+    rows.forEach(r=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${r.round}</td><td>${r.A}</td><td>${r.B}</td>${gap?`<td>${gap}</td>`:''}`;
+      tb.appendChild(tr);
+    });
+    table.appendChild(tb);
+    const setPreview = $('#setPreview');
+    setPreview.innerHTML = '';
+    setPreview.appendChild(table);
+
+    // Return also a flat expanded array for use elsewhere
+    return {name, A, B, reps, gap, rows};
+  }
+  $('#previewSet').addEventListener('click', previewSet);
+
+  $('#addSet').addEventListener('click', ()=>{
+    const p = previewSet();
+    const baseName = p.name ? p.name+': ' : '';
+    for(let i=0;i<p.reps;i++){
+      const a = p.rows[i].A;
+      const b = p.rows[i].B;
+      if(a>0) routine.push({label:`${baseName}${p.A.label} R${i+1}`, seconds:a});
+      if(b>0) routine.push({label:`${baseName}${p.B.label} R${i+1}`, seconds:b});
+      if(p.gap>0 && i<p.reps-1) routine.push({label:`${baseName}Gap`, seconds:p.gap});
+    }
+    renderRoutineList();
+    persistDraft();
+  });
+
+  // -------- Routine UI --------
+  function renderRoutineList(){
+    const list = $('#routineList');
+    list.innerHTML = '';
+    if(routine.length===0){
+      list.innerHTML = `<div class="hint">No intervals yet. Add manually or build a set.</div>`;
+      return;
+    }
+    routine.forEach((it, idx)=>{
+      const row = document.createElement('div');
+      row.className = 'item';
+      row.innerHTML = `<div><h4>${it.label}</h4><small class="muted">${it.seconds}s</small></div>
+        <div class="stack">
+          <button class="btn ghost" aria-label="Move up" ${idx===0?'disabled':''} data-act="up" data-idx="${idx}">↑</button>
+          <button class="btn ghost" aria-label="Move down" ${idx===routine.length-1?'disabled':''} data-act="down" data-idx="${idx}">↓</button>
+          <button class="btn ghost danger" aria-label="Delete" data-act="del" data-idx="${idx}">✕</button>
+        </div>`;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('button').forEach(b=>b.addEventListener('click', e=>{
+      const i = parseInt(b.dataset.idx,10);
+      const act = b.dataset.act;
+      if(act==='del') routine.splice(i,1);
+      if(act==='up' && i>0){ const t = routine[i-1]; routine[i-1]=routine[i]; routine[i]=t; }
+      if(act==='down' && i<routine.length-1){ const t = routine[i+1]; routine[i+1]=routine[i]; routine[i]=t; }
+      renderRoutineList();
+      persistDraft();
+    }));
+  }
+
+  function renderRoutineTable(){
+    const tb = $('#routineTable tbody');
+    tb.innerHTML = '';
+    routine.forEach((it, i)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i+1}</td><td>${it.label}</td><td>${it.seconds}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+
+  $('#clearRoutine').addEventListener('click', ()=>{
+    if(confirm('Clear the current routine?')){ routine = []; renderRoutineList(); renderRoutineTable(); persistDraft(); }
+  });
+  $('#goTimer').addEventListener('click', ()=>switchTab('timer'));
+
+  // -------- Timer --------
+  function speak(text){
+    try{
+      if(!$('#voiceOpt').checked) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1; u.pitch = 1; u.volume = 1;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  let audioCtx=null;
+  function beep(){
+    try{
+      if(!$('#beepOpt').checked) return;
+      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type='sine'; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.001, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.3, audioCtx.currentTime+0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.18);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime+0.2);
+    }catch(e){}
+  }
+  function vibrate(ms=120){ try{ if($('#vibOpt').checked && navigator.vibrate) navigator.vibrate(ms);}catch(e){} }
+
+  async function requestWakeLock(){
+    try{ if('wakeLock' in navigator){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release',()=>{wakeLock=null;}); } }catch(e){}
+  }
+
+  function updateTimerUI(){
+    const n = routine.length;
+    $('#posHint').textContent = `Step ${Math.min(pos+1,n)} of ${n}`;
+    if(n===0){ $('#nowLabel').textContent='—'; $('#clock').textContent='00:00'; $('#bar').value=0; $('#toggleBtn').textContent='Start'; return; }
+    const cur = routine[pos] || {label:'—', seconds:0};
+    $('#nowLabel').textContent = cur.label;
+    $('#clock').textContent = fmt(remain || cur.seconds);
+    const total = (cur.seconds||1);
+    $('#bar').value = 1 - ((remain||total)/total);
+    $('#toggleBtn').textContent = ticking? 'Pause' : 'Start';
+  }
+
+  function startTimer(){
+    if(routine.length===0) return alert('Add intervals to the routine first.');
+    ticking = true; requestWakeLock();
+    if(remain<=0) remain = routine[pos].seconds;
+    const tick = ()=>{
+      updateTimerUI();
+      if(!ticking) return;
+      if(remain<=0){
+        // step complete
+        beep(); vibrate();
+        if($('#autoNextOpt').checked) nextStep(); else { ticking=false; updateTimerUI(); }
+        return;
+      }
+      remain -= 1;
+      timerId = setTimeout(tick, 1000);
+    };
+    clearTimeout(timerId);
+    tick();
+  }
+
+  function pauseTimer(){ ticking=false; clearTimeout(timerId); updateTimerUI(); }
+
+  function resetTimer(){ pos=0; remain= routine[0]? routine[0].seconds:0; updateTimerUI(); }
+
+  function nextStep(){
+    if(pos < routine.length-1){ pos++; remain = routine[pos].seconds; speak(routine[pos].label); startTimer(); }
+    else { ticking=false; remain=0; updateTimerUI(); speak('Routine complete'); beep(); vibrate(200); }
+  }
+
+  function prevStep(){ if(pos>0){ pos--; remain = routine[pos].seconds; updateTimerUI(); } }
+
+  $('#toggleBtn').addEventListener('click', ()=>{ ticking? pauseTimer() : startTimer(); });
+  $('#resetBtn').addEventListener('click', resetTimer);
+  $('#nextBtn').addEventListener('click', nextStep);
+  $('#prevBtn').addEventListener('click', prevStep);
+
+  // Keyboard support
+  document.addEventListener('keydown', (e)=>{
+    if(e.code==='Space'){ e.preventDefault(); $('#toggleBtn').click(); }
+    if(e.code==='ArrowRight') $('#nextBtn').click();
+    if(e.code==='ArrowLeft') $('#prevBtn').click();
+  });
+
+  // -------- Save / Load Routines --------
+  const KEY = 'interval_forge_routines_v1';
+  const DRAFT_KEY = 'interval_forge_draft_v1';
+  function loadAll(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}'); }catch(e){ return {}; } }
+  function saveAll(map){ localStorage.setItem(KEY, JSON.stringify(map)); }
+  function persistDraft(){ localStorage.setItem(DRAFT_KEY, JSON.stringify(routine)); }
+  function restoreDraft(){ try{ const d = JSON.parse(localStorage.getItem(DRAFT_KEY)||'[]'); if(Array.isArray(d)){ routine = d; renderRoutineList(); } }catch(e){} }
+
+  function refreshSaved(){
+    const list = $('#savedList');
+    list.innerHTML = '';
+    const map = loadAll();
+    const names = Object.keys(map);
+    if(names.length===0){ list.innerHTML = '<div class="hint">No saved routines yet.</div>'; return; }
+    names.forEach(name=>{
+      const item = document.createElement('div');
+      item.className = 'item';
+      const total = (map[name]||[]).reduce((a,b)=>a+(b.seconds||0),0);
+      item.innerHTML = `<div><h4>${name}</h4><small class="muted">${(map[name]||[]).length} steps • ${fmt(total)}</small></div>
+        <div class="stack">
+          <button class="btn ghost" data-act="load" data-name="${name}">Load</button>
+          <button class="btn ghost danger" data-act="del" data-name="${name}">Delete</button>
+        </div>`;
+      list.appendChild(item);
+    });
+    list.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>{
+      const act = b.dataset.act; const name = b.dataset.name;
+      const map = loadAll();
+      if(act==='load'){ routine = map[name] || []; renderRoutineList(); switchTab('preview'); persistDraft(); }
+      if(act==='del'){ if(confirm(`Delete “${name}”?`)){ delete map[name]; saveAll(map); refreshSaved(); } }
+    }));
+  }
+
+  $('#saveRoutine').addEventListener('click', ()=>{
+    const name = ($('#routineName').value||'').trim();
+    if(!name) return alert('Please enter a routine name.');
+    const map = loadAll();
+    map[name] = routine.slice();
+    saveAll(map);
+    refreshSaved();
+    $('#routineName').value = '';
+  });
+
+  // -------- PWA Manifest & SW (all inline) --------
+  function makeIcon(size){
+    const c = document.createElement('canvas'); c.width=c.height=size;
+    const g = c.getContext('2d');
+    // simple gradient square icon with IF letters
+    const grd = g.createLinearGradient(0,0,size,size);
+    grd.addColorStop(0,'#0ea5e9'); grd.addColorStop(1,'#22c55e');
+    g.fillStyle = grd; g.fillRect(0,0,size,size);
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(size*0.06,size*0.06,size*0.88,size*0.88);
+    g.fillStyle = '#ffffff'; g.font = `${Math.floor(size*0.44)}px system-ui, Segoe UI, Roboto`;
+    g.textAlign='center'; g.textBaseline='middle';
+    g.fillText('IF', size/2, size/2+size*0.02);
+    return c.toDataURL('image/png');
+  }
+
+  function injectManifest(){
+    const manifest = {
+      name: 'Interval Forge', short_name: 'Forge',
+      start_url: '.', scope: '.', display: 'standalone', background_color: '#0a1329', theme_color: '#0ea5e9',
+      icons: [192,512].map(s=>({src: makeIcon(s), sizes: `${s}x${s}`, type:'image/png', purpose:'any maskable'}))
+    };
+    const blob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('link'); link.rel='manifest'; link.href=url; document.head.appendChild(link);
+  }
+
+  function registerSW(){
+    if(!('serviceWorker' in navigator)) return;
+    const swCode = `
+      const CACHE = 'interval-forge-v1';
+      self.addEventListener('install', e=>{ e.waitUntil((async()=>{ const c = await caches.open(CACHE); await c.addAll(['./']); })()); self.skipWaiting(); });
+      self.addEventListener('activate', e=>{ e.waitUntil((async()=>{ const keys = await caches.keys(); await Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))); })()); self.clients.claim(); });
+      self.addEventListener('fetch', e=>{
+        const req = e.request;
+        e.respondWith((async()=>{
+          const cache = await caches.open(CACHE);
+          const cached = await cache.match(req);
+          if(cached) return cached;
+          try{ const res = await fetch(req); if(req.method==='GET' && res.ok) cache.put(req, res.clone()); return res; }
+          catch(err){ return cached || Response.error(); }
+        })());
+      });
+    `;
+    const blob = new Blob([swCode], {type:'text/javascript'});
+    const url = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(url).catch(()=>{});
+  }
+
+  // Install prompt support
+  window.addEventListener('beforeinstallprompt', (e)=>{ e.preventDefault(); deferredPrompt = e; $('#installBtn').hidden=false; });
+  $('#installBtn').addEventListener('click', async ()=>{ if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt = null; $('#installBtn').hidden = true; } });
+
+  // Share button
+  $('#shareBtn').addEventListener('click', async ()=>{
+    try{ if(navigator.share) await navigator.share({title:document.title, text:'Interval Forge — PWA timer', url: location.href}); else alert('Tip: use your browser menu to “Add to Home Screen” for PWA.'); }catch(e){}
+  });
+
+  // -------- Init --------
+  function init(){
+    injectManifest();
+    registerSW();
+    restoreDraft();
+    refreshSaved();
+    if(routine.length>0){ pos=0; remain=routine[0].seconds; }
+    updateTimerUI();
+  }
+  init();
+  </script>
+</body>
+</html>
